@@ -1,47 +1,22 @@
 package com.vaadin.demo.dashboard.data.dummy;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.net.URL;
-import java.nio.charset.Charset;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-
-import com.google.common.base.Function;
 import com.google.common.base.Predicate;
-import com.google.common.collect.Collections2;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.MultimapBuilder;
+import com.google.common.collect.*;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.vaadin.demo.dashboard.data.DataProvider;
-import com.vaadin.demo.dashboard.domain.DashboardNotification;
-import com.vaadin.demo.dashboard.domain.Movie;
-import com.vaadin.demo.dashboard.domain.MovieRevenue;
-import com.vaadin.demo.dashboard.domain.Transaction;
-import com.vaadin.demo.dashboard.domain.User;
+import com.vaadin.demo.dashboard.domain.*;
 import com.vaadin.server.VaadinRequest;
 import com.vaadin.util.CurrentInstance;
+
+import java.io.*;
+import java.net.URL;
+import java.nio.charset.Charset;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 /**
  * A dummy implementation for the backend API.
@@ -109,9 +84,7 @@ public class DummyDataProvider implements DataProvider {
         cache = new File(baseDirectory + "/movies.txt");
 
         try {
-            if (cache.exists()
-                    && System.currentTimeMillis() < cache.lastModified()
-                            + (1000 * 60 * 60 * 24)) {
+            if (cache.exists() && System.currentTimeMillis() < cache.lastModified() + (1000 * 60 * 60 * 24)) {
                 // Use cache if it's under 24h old
                 json = readJsonFromFile(cache);
             } else {
@@ -229,6 +202,7 @@ public class DummyDataProvider implements DataProvider {
 
     static List<String> theaters = new ArrayList<String>() {
         private static final long serialVersionUID = 1L;
+
         {
             add("Threater 1");
             add("Threater 2");
@@ -241,6 +215,7 @@ public class DummyDataProvider implements DataProvider {
 
     static List<String> rooms = new ArrayList<String>() {
         private static final long serialVersionUID = 1L;
+
         {
             add("Room 1");
             add("Room 2");
@@ -338,21 +313,19 @@ public class DummyDataProvider implements DataProvider {
                     transaction.setCity(cities.iterator().next());
 
                     // Theater
-                    String theater = theaters
-                            .get((int) (rand.nextDouble() * (theaters.size() - 1)));
+                    String theater = theaters.get(
+                            (int) (rand.nextDouble() * (theaters.size() - 1)));
                     transaction.setTheater(theater);
 
                     // Room
-                    String room = rooms.get((int) (rand.nextDouble() * (rooms
-                            .size() - 1)));
+                    String room = rooms.get(
+                            (int) (rand.nextDouble() * (rooms.size() - 1)));
                     transaction.setRoom(room);
 
                     // Title
-                    int randomIndex = (int) (Math.abs(rand.nextGaussian()) * (movies
-                            .size() / 2.0 - 1));
+                    int randomIndex = (int) (Math.abs(rand.nextGaussian()) * (movies.size() / 2.0 - 1));
                     while (randomIndex >= movies.size()) {
-                        randomIndex = (int) (Math.abs(rand.nextGaussian()) * (movies
-                                .size() / 2.0 - 1));
+                        randomIndex = (int) (Math.abs(rand.nextGaussian()) * (movies.size() / 2.0 - 1));
                     }
 
                     // Seats
@@ -374,15 +347,6 @@ public class DummyDataProvider implements DataProvider {
 
     }
 
-    public static Movie getMovieForTitle(String title) {
-        for (Movie movie : movies) {
-            if (movie.getTitle().equals(title)) {
-                return movie;
-            }
-        }
-        return null;
-    }
-
     @Override
     public User authenticate(String userName, String password) {
         User user = new User();
@@ -401,14 +365,8 @@ public class DummyDataProvider implements DataProvider {
 
     @Override
     public Collection<Transaction> getRecentTransactions(int count) {
-        List<Transaction> orderedTransactions = Lists.newArrayList(transactions
-                .values());
-        Collections.sort(orderedTransactions, new Comparator<Transaction>() {
-            @Override
-            public int compare(Transaction o1, Transaction o2) {
-                return o2.getTime().compareTo(o1.getTime());
-            }
-        });
+        List<Transaction> orderedTransactions = Lists.newArrayList(transactions.values());
+        orderedTransactions.sort((o1, o2) -> o2.getTime().compareTo(o1.getTime()));
         return orderedTransactions.subList(0,
                 Math.min(count, transactions.values().size() - 1));
     }
@@ -470,24 +428,14 @@ public class DummyDataProvider implements DataProvider {
     @Override
     public Collection<MovieRevenue> getTotalMovieRevenues() {
         return Collections2.transform(movies,
-                new Function<Movie, MovieRevenue>() {
-                    @Override
-                    public MovieRevenue apply(Movie input) {
-                        return Iterables.getLast(getDailyRevenuesByMovie(input
-                                .getId()));
-                    }
-                });
+                input -> Iterables.getLast(getDailyRevenuesByMovie(input != null ? input.getId() : 0)));
     }
 
     @Override
     public int getUnreadNotificationsCount() {
-        Predicate<DashboardNotification> unreadPredicate = new Predicate<DashboardNotification>() {
-            @Override
-            public boolean apply(DashboardNotification input) {
-                return !input.isRead();
-            }
-        };
-        return Collections2.filter(notifications, unreadPredicate).size();
+        return Collections2.filter(notifications,
+                input -> !(input != null && input.isRead()))
+                .size();
     }
 
     @Override
@@ -509,25 +457,18 @@ public class DummyDataProvider implements DataProvider {
 
     @Override
     public Movie getMovie(final long movieId) {
-        return Iterables.find(movies, new Predicate<Movie>() {
-            @Override
-            public boolean apply(Movie input) {
-                return input.getId() == movieId;
-            }
-        });
+        return movies.stream()
+                .filter(input -> input.getId() == movieId)
+                .findFirst()
+                .orElse(null);
     }
 
     @Override
     public Collection<Transaction> getTransactionsBetween(final Date startDate,
-            final Date endDate) {
+                                                          final Date endDate) {
         return Collections2.filter(transactions.values(),
-                new Predicate<Transaction>() {
-                    @Override
-                    public boolean apply(Transaction input) {
-                        return !input.getTime().before(startDate)
-                                && !input.getTime().after(endDate);
-                    }
-                });
+                input -> !input.getTime().before(startDate)
+                        && !input.getTime().after(endDate));
     }
 
 }

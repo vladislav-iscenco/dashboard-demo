@@ -84,8 +84,7 @@ public final class DashboardUI extends UI {
 
     @Subscribe
     public void userLoginRequested(final UserLoginRequestedEvent event) {
-        User user = getDataProvider().authenticate(event.getUserName(),
-                event.getPassword());
+        User user = getDataProvider().authenticate(event.getUserName(), event.getPassword());
         VaadinSession.getCurrent().setAttribute(User.class.getName(), user);
         updateContent();
     }

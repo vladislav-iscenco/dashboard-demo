@@ -1,10 +1,9 @@
 package com.vaadin.demo.dashboard.component;
 
 import com.google.common.eventbus.Subscribe;
-import com.vaadin.demo.dashboard.DashboardUI;
-import com.vaadin.demo.dashboard.domain.DashboardNotification;
 import com.vaadin.demo.dashboard.event.DashboardEvent;
 import com.vaadin.demo.dashboard.event.DashboardEventBus;
+import com.vaadin.demo.dashboard.ui.DashboardUI;
 import com.vaadin.event.ShortcutAction;
 import com.vaadin.event.ShortcutListener;
 import com.vaadin.icons.VaadinIcons;
@@ -32,26 +31,6 @@ public final class NotificationsButton extends Button {
         addClickListener(this::openNotificationsPopup);
     }
 
-    @Subscribe
-    public void updateNotificationsCount(
-            final DashboardEvent.NotificationsCountUpdatedEvent event) {
-        setUnreadCount(DashboardUI.getDataProvider()
-                .getUnreadNotificationsCount());
-    }
-
-    public void setUnreadCount(final int count) {
-        setCaption(String.valueOf(count));
-
-        String description = "Notifications";
-        if (count > 0) {
-            addStyleName(STYLE_UNREAD);
-            description += " (" + count + " unread)";
-        } else {
-            removeStyleName(STYLE_UNREAD);
-        }
-        setDescription(description);
-    }
-
     private void openNotificationsPopup(final ClickEvent event) {
         VerticalLayout notificationsLayout = new VerticalLayout();
 
@@ -59,32 +38,6 @@ public final class NotificationsButton extends Button {
         title.addStyleName(ValoTheme.LABEL_H3);
         title.addStyleName(ValoTheme.LABEL_NO_MARGIN);
         notificationsLayout.addComponent(title);
-
-        Collection<DashboardNotification> notifications =
-                DashboardUI.getDataProvider().getNotifications();
-        DashboardEventBus.post(new DashboardEvent.NotificationsCountUpdatedEvent());
-
-        notifications.forEach(notification -> {
-            VerticalLayout notificationLayout = new VerticalLayout();
-            notificationLayout.setMargin(false);
-            notificationLayout.setSpacing(false);
-            notificationLayout.addStyleName("notification-item");
-
-            Label titleLabel = new Label(notification.getFirstName() + " "
-                    + notification.getLastName() + " "
-                    + notification.getAction());
-            titleLabel.addStyleName("notification-title");
-
-            Label timeLabel = new Label(notification.getPrettyTime());
-            timeLabel.addStyleName("notification-time");
-
-            Label contentLabel = new Label(notification.getContent());
-            contentLabel.addStyleName("notification-content");
-
-            notificationLayout.addComponents(titleLabel, timeLabel,
-                    contentLabel);
-            notificationsLayout.addComponent(notificationLayout);
-        });
 
         Button showAll = new Button("View All Notifications",
                 (ClickListener) event1 -> Notification.show("Not implemented in this demo"));

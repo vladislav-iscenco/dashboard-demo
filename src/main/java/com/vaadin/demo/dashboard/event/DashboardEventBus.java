@@ -3,7 +3,7 @@ package com.vaadin.demo.dashboard.event;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.SubscriberExceptionContext;
 import com.google.common.eventbus.SubscriberExceptionHandler;
-import com.vaadin.demo.dashboard.DashboardUI;
+import com.vaadin.demo.dashboard.ui.DashboardUI;
 
 /**
  * A simple wrapper for Guava event bus. Defines static convenience methods for

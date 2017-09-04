@@ -1,16 +1,20 @@
 package com.vaadin.demo.dashboard.ui;
 
+import com.vaadin.demo.dashboard.event.DashboardEventBus;
+import com.vaadin.demo.dashboard.view.AbstractView;
 import com.vaadin.navigator.Navigator;
 import com.vaadin.navigator.View;
 import com.vaadin.navigator.ViewChangeListener;
+import com.vaadin.server.Responsive;
 import com.vaadin.server.VaadinRequest;
-import com.vaadin.shared.Registration;
 import com.vaadin.shared.ui.MarginInfo;
 import com.vaadin.spring.navigator.SpringViewProvider;
 import com.vaadin.ui.*;
 import com.vaadin.ui.themes.ValoTheme;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.vaadin.spring.sidebar.components.AbstractSideBar;
+import org.vaadin.viritin.layouts.MHorizontalLayout;
+import org.vaadin.viritin.layouts.MVerticalLayout;
 import org.vaadin.viritin.navigator.MNavigator;
 
 /**
@@ -18,74 +22,94 @@ import org.vaadin.viritin.navigator.MNavigator;
  */
 public abstract class AbstractSideBarUI extends AbstractUI {
 
+    private Label titleLabel = new Label();
+    private VerticalLayout rightContainer;
+
+    public VerticalLayout getRightContainer() {
+        return rightContainer;
+    }
+
     @Autowired
-    SpringViewProvider viewProvider;
+    public AbstractSideBarUI(SpringViewProvider viewProvider) {
+        super(viewProvider);
+    }
 
     @Override
     protected void init(VaadinRequest vaadinRequest) {
-        final HorizontalLayout rootLayout = new HorizontalLayout();
-        rootLayout.setSizeFull();
-        rootLayout.setMargin(false);
-        rootLayout.setSpacing(false);
+        setErrorHandler();
+        DashboardEventBus.register(this);
+        Responsive.makeResponsive(this);
+        addStyleName(ValoTheme.UI_WITH_MENU);
 
+        final VerticalLayout viewContainer = new MVerticalLayout()
+                .withFullSize().withMargin(false).withSpacing(false);
+
+        rightContainer = new MVerticalLayout()
+                .with(
+                        buildHeader(),
+                        buildSparklines(),
+                        viewContainer
+                )
+                .withFullSize().withMargin(false).withSpacing(false)
+                .withExpand(viewContainer, 1.0F)
+                .withStyleName("view-content");
+
+        buildNavigator(viewContainer);
+
+        final MHorizontalLayout rootLayout = new MHorizontalLayout()
+                .with(getSideBar(), rightContainer)
+                .withFullSize().withMargin(false).withSpacing(false)
+                .withExpand(rightContainer, 1.0F);
         setContent(rootLayout);
+    }
 
-        final VerticalLayout rightContainer = new VerticalLayout();
-        rightContainer.setSizeFull();
-        rightContainer.setMargin(false);
-        rightContainer.setSpacing(false);
-
-        HorizontalLayout topLayout = new HorizontalLayout();
-        topLayout.setHeight(42, Unit.PIXELS);
-        topLayout.setWidth(100, Unit.PERCENTAGE);
-        topLayout.setMargin(new MarginInfo(false, true, false, true));
-
-        Button titleButton = new Button();
-        titleButton.setCaptionAsHtml(true);
-        titleButton.addStyleName(ValoTheme.BUTTON_BORDERLESS_COLORED);
-
-        topLayout.addComponent(titleButton);
-        topLayout.setComponentAlignment(titleButton, Alignment.MIDDLE_LEFT);
-        topLayout.setExpandRatio(titleButton, 0);
-
-        rightContainer.addComponent(topLayout);
-
-        final VerticalLayout viewContainer = new VerticalLayout();
-        viewContainer.setSizeFull();
-        viewContainer.setMargin(false);
-        viewContainer.setSpacing(false);
-
-        rightContainer.addComponent(viewContainer);
-        rightContainer.setExpandRatio(viewContainer, 1.0F);
-
+    private void buildNavigator(VerticalLayout viewContainer) {
         final Navigator navigator = new MNavigator(this, viewContainer);
         navigator.setErrorView(new ErrorView());
         navigator.addProvider(viewProvider);
-        setNavigator(navigator);
-
-        ViewChangeListener viewChangeListener = new ViewChangeListener() {
+        navigator.addViewChangeListener(new ViewChangeListener() {
             @Override
             public boolean beforeViewChange(ViewChangeEvent viewChangeEvent) {
+                titleLabel.setCaption(viewChangeEvent.getViewName());
                 return true;
             }
 
             @Override
             public void afterViewChange(ViewChangeEvent event) {
+                View newView = event.getNewView();
+                if (newView instanceof AbstractView) {
+                    AbstractView view = (AbstractView) newView;
+                    titleLabel.setCaption(view.getViewTitle());
+                    titleLabel.setIcon(view.getViewIcon());
+                    getPage().setTitle(view.getViewTitle());
 
+                }
             }
-        };
-
-        titleButton.addClickListener(clickEvent -> {
-            navigator.navigateTo(navigator.getState());
         });
-
-        navigator.addViewChangeListener(viewChangeListener);
-
-        rootLayout.addComponent(getSideBar());
-        rootLayout.addComponent(rightContainer);
-        rootLayout.setExpandRatio(rightContainer, 1.0f);
+        setNavigator(navigator);
     }
 
+    private HorizontalLayout buildHeader() {
+        titleLabel = new Label();
+        titleLabel.setSizeUndefined();
+        titleLabel.addStyleName(ValoTheme.LABEL_H1);
+        titleLabel.addStyleName(ValoTheme.LABEL_NO_MARGIN);
+
+        return new MHorizontalLayout(titleLabel)
+                .withMargin(new MarginInfo(
+                        false, true, false, true))
+                .withWidth(100, Unit.PERCENTAGE)
+                .withHeight(42, Unit.PIXELS)
+                .withStyleName("viewheader");
+    }
+
+    private Component buildSparklines() {
+        CssLayout sparks = new CssLayout();
+        sparks.addStyleName("sparks");
+        sparks.setWidth(100, Unit.PERCENTAGE);
+        Responsive.makeResponsive(sparks);
+        return sparks;
+    }
 
     protected abstract AbstractSideBar getSideBar();
 

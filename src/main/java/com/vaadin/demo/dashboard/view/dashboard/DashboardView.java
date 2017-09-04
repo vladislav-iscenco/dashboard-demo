@@ -1,13 +1,10 @@
 package com.vaadin.demo.dashboard.view.dashboard;
 
 import com.ebay.sdk.ApiContext;
-import com.ebay.sdk.call.GeteBayOfficialTimeCall;
-import com.vaadin.demo.dashboard.component.NotificationsButton;
-import com.vaadin.demo.dashboard.event.DashboardEvent.CloseOpenWindowsEvent;
-import com.vaadin.demo.dashboard.event.DashboardEventBus;
+import com.vaadin.demo.dashboard.ui.AbstractSideBarUI;
+import com.vaadin.demo.dashboard.ui.Sections;
+import com.vaadin.demo.dashboard.view.AbstractView;
 import com.vaadin.icons.VaadinIcons;
-import com.vaadin.navigator.View;
-import com.vaadin.navigator.ViewChangeListener.ViewChangeEvent;
 import com.vaadin.server.Responsive;
 import com.vaadin.spring.annotation.SpringView;
 import com.vaadin.spring.annotation.ViewScope;
@@ -21,111 +18,70 @@ import org.vaadin.viritin.label.MLabel;
 import org.vaadin.viritin.layouts.MCssLayout;
 import org.vaadin.viritin.layouts.MHorizontalLayout;
 
-import java.util.Calendar;
+import java.time.LocalDateTime;
 
-@SpringView(name = "")
-@SideBarItem(sectionId = "",
-        caption = "Dashboard",
+import static com.vaadin.demo.dashboard.view.dashboard.DashboardView.VIEW_NAME;
+import static com.vaadin.demo.dashboard.view.dashboard.DashboardView.VIEW_PATH;
+
+@SpringView(name = VIEW_PATH)
+@SideBarItem(sectionId = Sections.MAIN,
+        caption = VIEW_NAME,
         order = 1)
-@VaadinFontIcon(VaadinIcons.USER)
+@VaadinFontIcon(VaadinIcons.SPECIALIST)
 @ViewScope
-public final class DashboardView extends Panel implements View {
+public final class DashboardView extends AbstractView {
 
-    public static final String TITLE_ID = "dashboard-title";
+    public static final String VIEW_PATH = "";
+    public static final String VIEW_NAME = "Dashboard";
+    public static final String VIEW_TITLE = "Dashboard";
+    public static final VaadinIcons VIEW_ICON = VaadinIcons.SPECIALIST;
 
-    private Label titleLabel;
-    private NotificationsButton notificationsButton;
     private CssLayout dashboardPanels;
-    private VerticalLayout root;
 
-    final ApiContext apiContext;
+    private final ApiContext apiContext;
 
     @Autowired
     public DashboardView(ApiContext apiContext) {
+        super();
         this.apiContext = apiContext;
+        setViewPath(VIEW_PATH);
+        setViewName(VIEW_NAME);
+        setViewTitle(VIEW_TITLE);
+        setViewIcon(VIEW_ICON);
 
-        setSizeFull();
-        addStyleName(ValoTheme.PANEL_BORDERLESS);
-        DashboardEventBus.register(this);
-
-        createRoot();
-
-        root.addComponent(buildHeader());
-        root.addComponent(buildSparklines());
-
-        Component content = buildContent();
-        root.addComponent(content);
-        root.setExpandRatio(content, 1);
+        // workaround to save styles
+        ((AbstractSideBarUI) UI.getCurrent())
+                .getRightContainer().addStyleName("dashboard-view");
     }
 
-    private void createRoot() {
-        root = new VerticalLayout();
-        root.addStyleName("dashboard-view");
-        root.setSpacing(false);
-        root.setSizeFull();
-        setContent(root);
-        Responsive.makeResponsive(root);
-
-        // All the open sub-windows should be closed whenever the root layout gets clicked.
-        root.addLayoutClickListener(event ->
-                DashboardEventBus.post(new CloseOpenWindowsEvent()));
-    }
-
-    private Component buildSparklines() {
-        CssLayout sparks = new CssLayout();
-        sparks.addStyleName("sparks");
-        sparks.setWidth("100%");
-        Responsive.makeResponsive(sparks);
-
-        return sparks;
-    }
-
-    private Component buildHeader() {
-        HorizontalLayout header = new HorizontalLayout();
-        header.addStyleName("viewheader");
-
-        titleLabel = new Label("Dashboard");
-        titleLabel.setId(TITLE_ID);
-        titleLabel.setSizeUndefined();
-        titleLabel.addStyleName(ValoTheme.LABEL_H1);
-        titleLabel.addStyleName(ValoTheme.LABEL_NO_MARGIN);
-        header.addComponent(titleLabel);
-
-        notificationsButton = new NotificationsButton();
-
-        HorizontalLayout tools = new HorizontalLayout(notificationsButton);
-        tools.addStyleName("toolbar");
-        header.addComponent(tools);
-        return header;
-    }
-
-    private Component buildContent() {
+    protected Component createContent() {
         dashboardPanels = new CssLayout();
         dashboardPanels.addStyleName("dashboard-panels");
         Responsive.makeResponsive(dashboardPanels);
 
         try {
-            //Create call object and execute the call
-            GeteBayOfficialTimeCall apiCall = new GeteBayOfficialTimeCall(apiContext);
-            Calendar cal = apiCall.geteBayOfficialTime();
-            dashboardPanels.addComponent(
-                    createContentWrapper(new Label("Official eBay Time : " + cal.getTime().toString()))
-            );
+//            GeteBayOfficialTimeCall apiCall = new GeteBayOfficialTimeCall(apiContext);
+//            Date time = apiCall.geteBayOfficialTime().getTime();
+            Label label = new Label("Official eBay Time : "
+//                    + time.toString());
+                    + LocalDateTime.now().toString());
+
+            dashboardPanels.addComponent(wrapContentPart(label));
+
         } catch (Exception e) {
             System.out.println("Fail to get eBay official time.");
             e.printStackTrace();
         }
-
         return dashboardPanels;
     }
 
-    private Component createContentWrapper(final Component content) {
+    private Component wrapContentPart(final Component content) {
         final MCssLayout slot = new MCssLayout()
                 .withWidth(100, Unit.PERCENTAGE)
                 .withStyleName("dashboard-panel-slot");
 
         MCssLayout card = new MCssLayout()
-                .withWidth(100, Unit.PERCENTAGE)
+                .withFullSize()
                 .withStyleName(ValoTheme.LAYOUT_CARD);
 
         MenuBar tools = new MenuBar();
@@ -133,11 +89,11 @@ public final class DashboardView extends Panel implements View {
 
         MenuItem maximize = tools.addItem("", VaadinIcons.EXPAND,
                 selectedItem -> {
-                    if (!slot.getStyleName().contains("maximize")) {
+                    if (!slot.getStyleName().contains("max")) {
                         selectedItem.setIcon(VaadinIcons.COMPRESS);
                         toggleMaximized(slot, true);
                     } else {
-                        slot.removeStyleName("maximize");
+                        slot.removeStyleName("max");
                         selectedItem.setIcon(VaadinIcons.EXPAND);
                         toggleMaximized(slot, false);
                     }
@@ -171,13 +127,8 @@ public final class DashboardView extends Panel implements View {
         return slot;
     }
 
-    @Override
-    public void enter(final ViewChangeEvent event) {
-
-    }
-
     private void toggleMaximized(final Component panel, final boolean maximized) {
-        for (Component aRoot : root) {
+        for (Component aRoot : contentWrapper) {
             aRoot.setVisible(!maximized);
         }
         dashboardPanels.setVisible(true);

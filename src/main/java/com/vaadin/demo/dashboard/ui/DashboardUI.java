@@ -4,14 +4,11 @@ import com.vaadin.annotations.Theme;
 import com.vaadin.annotations.Title;
 import com.vaadin.annotations.Widgetset;
 import com.vaadin.demo.dashboard.event.DashboardEventBus;
-import com.vaadin.icons.VaadinIcons;
 import com.vaadin.server.VaadinRequest;
 import com.vaadin.spring.annotation.SpringUI;
-import com.vaadin.ui.CssLayout;
+import com.vaadin.spring.navigator.SpringViewProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.vaadin.spring.sidebar.components.AbstractSideBar;
-import org.vaadin.spring.sidebar.components.ValoSideBar;
-import org.vaadin.viritin.label.MLabel;
 
 /**
  * Created by Ronen on 9/3/2017.
@@ -24,8 +21,13 @@ public class DashboardUI extends AbstractSideBarUI {
 
     private final DashboardEventBus dashboardEventbus = new DashboardEventBus();
 
+    private final DashboardSideBar sideBar;
+
     @Autowired
-    ValoSideBar sideBar;
+    public DashboardUI(SpringViewProvider viewProvider, DashboardSideBar sideBar) {
+        super(viewProvider);
+        this.sideBar = sideBar;
+    }
 
     @Override
     protected void init(VaadinRequest request) {
@@ -34,10 +36,7 @@ public class DashboardUI extends AbstractSideBarUI {
 
     @Override
     protected AbstractSideBar getSideBar() {
-        CssLayout headerLayout = new CssLayout();
-        headerLayout.addComponent(new MLabel().withIcon(VaadinIcons.USER));
-        sideBar.setHeader(headerLayout);
-        headerLayout.addStyleName("header-layout");
+        DashboardEventBus.register(sideBar);
         return sideBar;
     }
 

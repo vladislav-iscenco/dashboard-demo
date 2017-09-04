@@ -1,5 +1,7 @@
 package com.vaadin.demo.dashboard.event;
 
+import com.vaadin.demo.dashboard.view.AbstractView;
+
 /*
  * Event bus events used in Dashboard are listed here as inner classes.
  */
@@ -51,6 +53,27 @@ public abstract class DashboardEvent {
     }
 
     public static class ProfileUpdatedEvent {
+        private String name;
+
+        public ProfileUpdatedEvent(String name) {
+            this.name = name;
+        }
+
+        public String getName() {
+            return name;
+        }
+    }
+
+    public static final class PostViewChangeEvent {
+        private final AbstractView view;
+
+        public PostViewChangeEvent(final AbstractView view) {
+            this.view = view;
+        }
+
+        public AbstractView getView() {
+            return view;
+        }
     }
 
 }
